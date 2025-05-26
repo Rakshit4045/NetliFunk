@@ -142,13 +142,13 @@ export const aiSkillMatch = async (requiredSkill: string[], skillsets: SkillDeta
 
   try{
 
-    if(!process.env.VITE_GEMINI_API_KEY) {
-      throw new Error('VITE_GEMINI_API_KEY environment variable is not set');
+    if(!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY environment variable is not set');
     }
     
-    const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: process.env.VITE_GEMINI_MODEL_NAME || defaultConfig.modelName
+      model: process.env.GEMINI_MODEL_NAME || defaultConfig.modelName
     })
     
     const result = await model.generateContent(prompt);

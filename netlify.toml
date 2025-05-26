@@ -2,10 +2,10 @@
   functions = "netlify/functions"
   publish = "dist"
 
-## [dev]
-  ## functions = "netlify/functions"
-  ## publish = "public"
-  ## port = 8888
+[dev]
+  functions = "netlify/functions"
+  publish = "public"
+  port = 8888
 
 [[redirects]]
   from = "/api/*"
