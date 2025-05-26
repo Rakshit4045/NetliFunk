@@ -1,0 +1,20 @@
+{
+  "scripts": {
+    "test:jd": "ts-node netlify/functions/test-jd-analysis.ts",
+    "dev": "netlify dev",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^3.1.8",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.15.17",
+    "netlify-cli": "^21.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
