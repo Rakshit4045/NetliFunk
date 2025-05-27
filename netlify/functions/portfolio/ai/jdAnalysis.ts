@@ -6,12 +6,13 @@ import {
   generateOverallSummary
 } from '../../../functions/shared/utils/analysis';
 import { aiSkillMatch } from '../../../functions/shared/utils/skills';
-import { JDAnalysisResult, ProfessionalProfile, SkillMatch, DomainMatch } from '../../../functions/shared/types';
+import { JDAnalysisResult, SkillMatch, DomainMatch } from '../../../functions/shared/types';
 import { Handler } from '@netlify/functions';
 import { analyzeJobDescription } from './jobDescription';
 import { professionalProfile } from '../../../data/professional-profile';
+import { logInfo, logWarn, logError, logDebug, withLogging } from '../../../functions/shared/utils/logger';
 
-export const handler: Handler = async (event) => {
+export const handler: Handler = withLogging(async (event) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -29,18 +30,32 @@ export const handler: Handler = async (event) => {
 
   try {    
     if (!event.body) {
+      logWarn('Request body missing');
       throw new Error('Request body is required');
     }
     
     const { jdText, customPrompt } = JSON.parse(event.body);
     if (!jdText || typeof jdText !== 'string') {
+      logWarn('Invalid job description text', { jdText });
       throw new Error('Job description text is required and must be a string');
     }
     
-    const { skills, experience, preferences } = await analyzeJobDescription(jdText, professionalProfile, customPrompt);
+    logInfo('Starting job description analysis', { 
+      jdLength: jdText.length,
+      hasCustomPrompt: !!customPrompt 
+    });
     
-    // const skillMatches = skills.map((skill: string) => findSkillMatch(skill, professionalProfile));
+    const { skills, experience, preferences } = await analyzeJobDescription(jdText, professionalProfile, customPrompt);
+    logDebug('Initial analysis complete', { 
+      skillsCount: skills.length,
+      experienceLevel: experience.level
+    });
+    
     const skillMatches: SkillMatch[] = await aiSkillMatch(skills, professionalProfile.skillsets);
+    logDebug('Skill matching complete', { 
+      totalSkills: skillMatches.length,
+      matchedSkills: skillMatches.filter(s => s.match !== 'missing').length
+    });
     
     // Check for domain expertise matches
     const domainMatches: DomainMatch[] = Object.entries(professionalProfile.domainExpertise).map(([domain, expertise]) => ({
@@ -57,11 +72,20 @@ export const handler: Handler = async (event) => {
     const keyStrengths = generateKeyStrengths(skillMatches, experience);
     const potentialConcerns = generateConcerns(skillMatches, experience, preferences);
 
+    logInfo('Analysis complete', {
+      overallScore,
+      keyStrengthsCount: keyStrengths.length,
+      concernsCount: potentialConcerns.length
+    });
+
     // If we have domain matches, add them to the key strengths
     if (domainMatches.some(m => m.matches)) {
       const matchedDomains = domainMatches.filter(m => m.matches);
       matchedDomains.forEach(match => {
         keyStrengths.push(`Strong ${match.domain} domain expertise with ${match.experience} and relevant projects: ${match.relevantProjects.join(', ')}`);
+      });
+      logDebug('Domain matches added to strengths', {
+        matchedDomains: matchedDomains.map(m => m.domain)
       });
     }
 
@@ -94,10 +118,11 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify(analysis, null, 2)
-    };  } catch (error: any) {
-    console.error('JD Analysis Error:', {
-      message: error.message,
-      stack: error.stack,
+    };
+  } catch (err: any) {
+    logError('JD Analysis Error:', {
+      message: err.message,
+      stack: err.stack,
       body: event.body
     });
     return {
@@ -107,10 +132,10 @@ export const handler: Handler = async (event) => {
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({ 
-        error: error.message,
-        details: error.stack,
+        error: err.message,
+        details: err.stack,
         timestamp: new Date().toISOString()
       }, null, 2)
     };
   }
-};
+});
