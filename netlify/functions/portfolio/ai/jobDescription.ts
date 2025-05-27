@@ -5,6 +5,7 @@ import { parseWorkMode } from '../../shared/utils/workMode';
 import { generateExperienceAnalysis } from '../../shared/utils/analysis';
 import { calculateYearsOfExperience, formatExperience } from '../../shared/utils/date';
 import { defaultConfig } from '../config/ai-config';
+import { logInfo, logError, logDebug } from '../../../functions/shared/utils/logger';
 
 interface AIWorkPreference {
   type: 'workMode' | 'workDays' | 'other';
@@ -34,6 +35,11 @@ export const analyzeJobDescription = async (
 }> => {
   const currentYears = calculateYearsOfExperience(profile.startedWorking);
   
+  logInfo('Starting job description analysis', {
+    profileExperience: currentYears,
+    customPrompt: !!customPrompt
+  });
+
   const prompt = `
     Analyze this job description and extract:
     1. Only Technical skills and technologies required. Also include technologies mentioned in custom prompt ${customPrompt} (as a list)
@@ -67,79 +73,104 @@ export const analyzeJobDescription = async (
   `;
 
   if (!process.env.GEMINI_API_KEY) {
+    logError('Missing API key configuration');
     throw new Error('GEMINI_API_KEY environment variable is not set');
   }
+
+  logDebug('Initializing AI model', {
+    modelName: process.env.GEMINI_MODEL_NAME || defaultConfig.modelName
+  });
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ 
     model: process.env.GEMINI_MODEL_NAME || defaultConfig.modelName 
   });
   
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const aiResponse = cleanJsonResponse<AIJobAnalysis>(response.text());
+  try {
+    logInfo('Sending request to AI model');
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const aiResponse = cleanJsonResponse<AIJobAnalysis>(response.text());
 
-  // Validate AI response
-  if (!aiResponse || !Array.isArray(aiResponse.skills)) {
-    throw new Error('Invalid AI response format');
-  }
+    // Validate AI response
+    if (!aiResponse || !Array.isArray(aiResponse.skills)) {
+      logError('Invalid AI response format', { response: aiResponse });
+      throw new Error('Invalid AI response format');
+    }
 
-  // Prepare experience analysis with accurate years
-  const experience: ExperienceAnalysis = {
-    requiredYears: aiResponse.requiredYears ? formatExperience(aiResponse.requiredYears) : "No available",
-    currentYears: formatExperience(currentYears),
-    isMatch: currentYears >= aiResponse.requiredYears,
-    analysis: generateExperienceAnalysis(currentYears, aiResponse.requiredYears),
-    level: aiResponse.experienceDetails?.experienceLevel || 'Mid'
-  };
+    logDebug('AI analysis complete', {
+      skillsCount: aiResponse.skills.length,
+      requiredYears: aiResponse.requiredYears,
+      experienceLevel: aiResponse.experienceDetails?.experienceLevel
+    });
 
-  // Analyze work preferences
-  const preferences = aiResponse.workPreferences.map((pref): WorkPreferenceMatch => {
-    if (pref.type === 'workMode') {
-      const modes = parseWorkMode(pref.requirement);
-      const matches = modes.some(mode => 
-        profile.workPreferences.location[mode.toLowerCase() as keyof typeof profile.workPreferences.location] 
-        || profile.workPreferences.roleType.find(role => role.toLocaleLowerCase() === mode.toLocaleLowerCase())
-      );
+    // Prepare experience analysis with accurate years
+    const experience: ExperienceAnalysis = {
+      requiredYears: aiResponse.requiredYears ? formatExperience(aiResponse.requiredYears) : "No available",
+      currentYears: formatExperience(currentYears),
+      isMatch: currentYears >= aiResponse.requiredYears,
+      analysis: generateExperienceAnalysis(currentYears, aiResponse.requiredYears),
+      level: aiResponse.experienceDetails?.experienceLevel || 'Mid'
+    };
 
-      // const matches = true;
+    // Analyze work preferences
+    const preferences = aiResponse.workPreferences.map((pref): WorkPreferenceMatch => {
+      if (pref.type === 'workMode') {
+        const modes = parseWorkMode(pref.requirement);
+        const matches = modes.some(mode => 
+          profile.workPreferences.location[mode.toLowerCase() as keyof typeof profile.workPreferences.location] 
+          || profile.workPreferences.roleType.find(role => role.toLocaleLowerCase() === mode.toLocaleLowerCase())
+        );
+
+        return {
+          preference: 'Work Mode',
+          requirement: pref.requirement,
+          matches,
+          comment: matches ? 
+            'Preferred work mode available' : 
+            'Work mode preference mismatch'
+        };
+      }
+      
+      if (pref.type === 'workDays') {
+        const daysMatch = pref.requirement.match(/(\d+)/);
+        const requiredDays = daysMatch ? parseInt(daysMatch[1], 10) : 5;
+        const matches = profile.workPreferences.workSchedule.maxDaysPerWeek >= requiredDays;
+
+        return {
+          preference: 'Work Schedule',
+          requirement: pref.requirement,
+          matches,
+          comment: matches ? 
+            'Work schedule matches requirements' : 
+            'Preferred work schedule differs from requirements'
+        };
+      }
 
       return {
-        preference: 'Work Mode',
+        preference: 'Unknown',
         requirement: pref.requirement,
-        matches,
-        comment: matches ? 
-          'Preferred work mode available' : 
-          'Work mode preference mismatch'
+        matches: false,
+        comment: 'Unknown preference type'
       };
-    }
-    
-    if (pref.type === 'workDays') {
-      const daysMatch = pref.requirement.match(/(\d+)/);
-      const requiredDays = daysMatch ? parseInt(daysMatch[1], 10) : 5;
-      const matches = profile.workPreferences.workSchedule.maxDaysPerWeek >= requiredDays;
+    });
 
-      return {
-        preference: 'Work Schedule',
-        requirement: pref.requirement,
-        matches,
-        comment: matches ? 
-          'Work schedule matches requirements' : 
-          'Preferred work schedule differs from requirements'
-      };
-    }
+    logInfo('Analysis complete', {
+      skillsCount: aiResponse.skills.length,
+      experienceMatch: experience.isMatch,
+      preferencesCount: preferences.length
+    });
 
     return {
-      preference: pref.type,
-      requirement: pref.requirement,
-      matches: true,
-      comment: pref.details
+      skills: aiResponse.skills,
+      experience,
+      preferences
     };
-  });
-
-  return {
-    skills: aiResponse.skills,
-    experience,
-    preferences
-  };
+  } catch (err: any) {
+    logError('AI analysis failed', {
+      error: err.message,
+      stack: err.stack
+    });
+    throw err;
+  }
 };

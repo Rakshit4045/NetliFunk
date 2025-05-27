@@ -2,6 +2,7 @@ import { SkillMatch, SkillDetail } from '../../shared/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { defaultConfig } from '@/functions/portfolio/config/ai-config';
 import { cleanJsonResponse } from './text';
+import { logInfo, logWarn, logError, logDebug } from './logger';
 
 // export const findSkillMatch = (requiredSkill: string, profile: ProfessionalProfile): SkillMatch => {
 //   // Flatten all skills from different categories
@@ -80,6 +81,11 @@ import { cleanJsonResponse } from './text';
 
 
 export const aiSkillMatch = async (requiredSkill: string[], skillsets: SkillDetail[]): Promise<SkillMatch[]> => {
+  logInfo('Starting skill matching process', {
+    requiredSkillsCount: requiredSkill.length,
+    skillsetsCount: skillsets.length
+  });
+
   const prompt = `
   You are a smart resume and skillset analyzer.
 
@@ -140,29 +146,46 @@ export const aiSkillMatch = async (requiredSkill: string[], skillsets: SkillDeta
   jdSkills: ${JSON.stringify(requiredSkill)}
 `;
 
-  try{
-
+  try {
     if(!process.env.GEMINI_API_KEY) {
+      logError('Missing API key configuration');
       throw new Error('GEMINI_API_KEY environment variable is not set');
     }
+    
+    logDebug('Initializing AI model', {
+      modelName: process.env.GEMINI_MODEL_NAME || defaultConfig.modelName
+    });
     
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
       model: process.env.GEMINI_MODEL_NAME || defaultConfig.modelName
-    })
+    });
     
+    logInfo('Sending request to AI model for skill matching');
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    // console.log('AI Response:', response.text());
+    
+    logDebug('Received AI response, cleaning and parsing');
     const aiResponse = cleanJsonResponse<SkillMatch[]>(response.text());
-    // const aiResponse = JSON.parse(response.text()) as SkillMatch[];
+    
     if (!aiResponse || !Array.isArray(aiResponse)) {
+      logError('Invalid AI response format', { response: aiResponse });
       throw new Error('Invalid AI response format');
     }
-    return aiResponse;
-  } catch (error) {
-    console.error('Error generating AI response:', error);
-    throw error;
-  }
 
+    logInfo('Skill matching complete', {
+      totalSkills: aiResponse.length,
+      exactMatches: aiResponse.filter(m => m.match === 'exact').length,
+      similarMatches: aiResponse.filter(m => m.match === 'similar').length,
+      missingMatches: aiResponse.filter(m => m.match === 'missing').length
+    });
+
+    return aiResponse;
+  } catch (err: any) {
+    logError('Skill matching failed', {
+      error: err.message,
+      stack: err.stack
+    });
+    throw err;
+  }
 };
