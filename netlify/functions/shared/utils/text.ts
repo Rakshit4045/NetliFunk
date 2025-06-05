@@ -7,6 +7,12 @@ export const cleanJsonResponse = <T>(text: string): T => {
     const cleanedText = text
       .replace(/```json\s*/, '')
       .replace(/```\s*$/, '')
+      .replace(/\n/, '')
+      .replace(/`\`/, '')
+      .replace(/\\n/g, ' ')                // Remove escaped newlines
+      .replace(/\\"/g, '"')                // Unescape double quotes
+      .replace(/\\\\/g, '\\')              // Unescape double backslashes
+      .replace(/,\s*(\}|\])/g, '$1')      
       .trim();
 
     // Find and extract JSON object if embedded in other text

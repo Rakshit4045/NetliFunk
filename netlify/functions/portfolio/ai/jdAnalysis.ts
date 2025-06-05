@@ -5,7 +5,7 @@ import {
   calculateOverallScore,
   generateOverallSummary
 } from '../../../functions/shared/utils/analysis';
-import { aiSkillMatch } from '../../../functions/shared/utils/skills';
+import { aiSkillMatch, aiSkillMatchChunk } from '../../../functions/shared/utils/skills';
 import { JDAnalysisResult, SkillMatch, DomainMatch } from '../../../functions/shared/types';
 import { Handler } from '@netlify/functions';
 import { analyzeJobDescription } from './jobDescription';
@@ -51,7 +51,8 @@ export const handler: Handler = withLogging(async (event) => {
       experienceLevel: experience.level
     });
     
-    const skillMatches: SkillMatch[] = await aiSkillMatch(skills, professionalProfile.skillsets);
+    const skillMatches: SkillMatch[] = await aiSkillMatchChunk(skills, professionalProfile.skillsets);
+
     logDebug('Skill matching complete', { 
       totalSkills: skillMatches.length,
       matchedSkills: skillMatches.filter(s => s.match !== 'missing').length
