@@ -63,21 +63,21 @@ export const professionalProfile: ProfessionalProfile = {
       category: "frontend"
     },
     { 
-      name: "HTML", 
+      name: "HTML, HTML5", 
       rating: 4,
       experience: "4+ years",
       description: "Built SEO friendly and DOM optimized web applications",
       category: 'frontend'
     },
     { 
-      name: "CSS", 
+      name: "CSS, CSS3, tailwind", 
       rating: 4,
       experience: "4+ years",
       description: "Used in building responsive web pages and animations",
       category: 'frontend'
     },
     { 
-      name: "Material-UI", 
+      name: "Material-UI, Bootstrap", 
       rating: 3,
       experience: "2+ years",
       description: "Built consistent and responsive UI components in enterprise projects",
@@ -91,7 +91,7 @@ export const professionalProfile: ProfessionalProfile = {
       category: 'backend'
     },
     { 
-      name: ".NET Web API", 
+      name: ".NET Web API, web api, asp.net", 
       rating: 4,
       experience: "2+ years",
       description: "Built and maintained .NET applications for healthcare systems on Azure",
@@ -189,7 +189,7 @@ export const professionalProfile: ProfessionalProfile = {
       category: 'backend'
     },
     { 
-      name: "Node.js", 
+      name: "Node.js, Node, NPM", 
       rating: 3,
       experience: "1.5+ years",
       description: "Built REST APIs for small apps and learned Express integration",
@@ -217,7 +217,7 @@ export const professionalProfile: ProfessionalProfile = {
       category: 'backend'
     },
     {
-      name: "OAuth 2.0",
+      name: "OAuth 2.0, OAuth, Authentication, Authorization",
       rating: 4,
       experience: "1.5+ years",
       description: "Implemented PKCE, client credentials, and auth code flows with Azure AD B2C",
@@ -231,7 +231,7 @@ export const professionalProfile: ProfessionalProfile = {
       category: 'database'
     },
     { 
-      name: "MySQL", 
+      name: "MySQL, SQL", 
       rating: 3,
       experience: "1+ year",
       description: "Used in practice environments and basic query work",
@@ -245,7 +245,7 @@ export const professionalProfile: ProfessionalProfile = {
       category: 'database'
     },
     { 
-      name: "PostgreSQL", 
+      name: "PostgreSQL, Postgres", 
       rating: 2,
       experience: "Learning",
       description: "Explored schema design and SQL operations",
@@ -446,6 +446,13 @@ export const professionalProfile: ProfessionalProfile = {
       experience: "1 year",
       description: "Created a complete framework for automated CQL query validation",
       category: 'domain'
+    },
+    {
+      name: "SOLID, OOP, TDD, Debugging, Troubleshooting, Code Review, Requirement Analysis, System Design, Technical Documentation, Unit Testing, Agile/Scrum, Version Control (Git), Time Management",
+      rating: 4,
+      experience: "3+ years",
+      description: "Proficient in a wide range of general engineering practices including debugging, code review, agile collaboration, documentation, and problem-solving across the full stack.",
+      category: 'general'
     }
   ],
 
