@@ -100,3 +100,15 @@ export interface JDAnalysisResult {
     potentialConcerns?: string[];
   };
 }
+
+export type PortfolioSection = 'about' | 'experience' | 'projects' | 'skills' | 'contact';
+
+export interface AIAssistantRequest {
+  question: string;
+  section: PortfolioSection;
+}
+
+export interface AIAssistantResponse {
+  answer: string;
+  followUpQuestions: string[];
+}

@@ -5,7 +5,7 @@ import {
   calculateOverallScore,
   generateOverallSummary
 } from '../../../functions/shared/utils/analysis';
-import { aiSkillMatch, aiSkillMatchChunk } from '../../../functions/shared/utils/skills';
+import { aiSkillMatchChunk } from '../../../functions/shared/utils/skills';
 import { JDAnalysisResult, SkillMatch, DomainMatch } from '../../../functions/shared/types';
 import { Handler } from '@netlify/functions';
 import { analyzeJobDescription } from './jobDescription';
