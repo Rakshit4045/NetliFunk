@@ -13,12 +13,19 @@ I wanted to add AI and backend features to my portfolio, but I was way too lazy 
 ## 🚀 What does it do?
 
 - Provides serverless backend endpoints for my [React portfolio](https://github.com/Rakshit4045/Portfolio)
+- Features an AI assistant powered by Gemini that can answer questions about my portfolio sections
 - Handles AI-powered features (like skill matching and job description analysis)
 - Lets me keep my beloved React codebase untouched by Next.js migration woes
 
 ## 🤖 AI Features & Gemini API
 
 Most of the features in this project are AI-related and powered by the [Gemini API](https://ai.google.dev/). The best part? The Gemini API key is free (at least for now), so you can experiment without worrying about your wallet.
+
+### Available AI Endpoints
+
+1. **AI Assistant** (`/ai-assistant`): An intelligent assistant that can answer questions about different sections of my portfolio. It uses Gemini AI to provide contextual and accurate responses about my experience, projects, skills, and other portfolio sections.
+
+2. **Job Description Analysis** (`/jd-analysis`): Analyzes job descriptions and matches them against my skills and experience.
 
 ### Setting up AI locally
 
